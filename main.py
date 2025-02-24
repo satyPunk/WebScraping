@@ -1,8 +1,16 @@
 import requests
 import certifi
 from bs4 import BeautifulSoup
+import nltk
+from nltk.sentiment import SentimentIntensityAnalyzer
+
+# Download VADER lexicon if not already downloaded
+nltk.download("vader_lexicon")
+
+# Initialize sentiment analyzer
+sia = SentimentIntensityAnalyzer()
+
 url = "https://timesofindia.indiatimes.com/"
-path = "data/times.html"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
     "Accept-Language": "en-US,en;q=0.9",
@@ -18,11 +26,24 @@ HEADERS = {
     "Sec-Fetch-User": "?1",
 }
 
-webpage=requests.get(url, HEADERS,verify=certifi.where()).text
-soup = BeautifulSoup(webpage,'lxml')
-captions = [fig.text.strip() for fig in soup.find_all('figcaption',class_="")]
-# print(captions[0])
-for cap in captions:
-    print(cap, end=" |  ")
-    print()
-    
+try:
+    response = requests.get(url, headers=HEADERS, verify=certifi.where())
+    response.raise_for_status()  # Check for request errors
+    webpage = response.text
+
+    soup = BeautifulSoup(webpage, "lxml")
+    captions = [fig.text.strip() for fig in soup.find_all("figcaption") if fig.text.strip()]
+
+    if captions:
+        print("Extracted Captions and Sentiment Analysis:\n")
+        for cap in captions:
+            sentiment = sia.polarity_scores(cap)
+            print(f"Caption: {cap}")
+            print(f"Positive: {sentiment['pos']:.2f}, Negative: {sentiment['neg']:.2f}, Neutral: {sentiment['neu']:.2f}")
+            print(f"Overall Sentiment Score: {sentiment['compound']:.2f} (Positive if > 0.05, Negative if < -0.05, Neutral otherwise)")
+            print("-" * 80)
+    else:
+        print("No captions found.")
+
+except requests.exceptions.RequestException as e:
+    print("Error fetching the webpage:", e)
