@@ -34,39 +34,50 @@ try:
     soup = BeautifulSoup(webpage, "lxml")
     captions = [fig.text.strip() for fig in soup.find_all("figcaption") if fig.text.strip()]
 
-    total_sentiment = 0
-    count = 0
+    if not captions:
+        print("No captions found.")
+    else:
+        # Ask the user whether to see individual analysis or just overall sentiment
+        print("Choose an option:")
+        print("1️⃣ Individual Captions Sentiment Analysis")
+        print("2️⃣ Overall Webpage Sentiment Analysis Only")
+        choice = input("Enter 1 or 2: ").strip()
 
-    if captions:
-        print("Extracted Captions and Sentiment Analysis:\n")
+        total_sentiment = 0
+        count = 0
+
+        if choice == "1":
+            print("\n🔹 Extracted Captions and Sentiment Analysis:\n")
+            for cap in captions:
+                sentiment = sia.polarity_scores(cap)
+                print(f"📝 Caption: {cap}")
+                print(f"👍 Positive: {sentiment['pos']:.2f}, 👎 Negative: {sentiment['neg']:.2f}, 😐 Neutral: {sentiment['neu']:.2f}")
+                print(f"⚖️ Overall Sentiment Score: {sentiment['compound']:.2f} (Positive if > 0.05, Negative if < -0.05, Neutral otherwise)")
+                print("-" * 80)
+                
+                # Accumulate for overall sentiment
+                total_sentiment += sentiment["compound"]
+                count += 1
+
+        # Calculate overall sentiment even if the user selected individual analysis
         for cap in captions:
             sentiment = sia.polarity_scores(cap)
-            print(f"Caption: {cap}")
-            print(f"Positive: {sentiment['pos']:.2f}, Negative: {sentiment['neg']:.2f}, Neutral: {sentiment['neu']:.2f}")
-            print(f"Overall Sentiment Score: {sentiment['compound']:.2f} (Positive if > 0.05, Negative if < -0.05, Neutral otherwise)")
-            print("-" * 80)
-            
-            # Aggregate sentiment
             total_sentiment += sentiment["compound"]
             count += 1
 
-        # Calculate the average sentiment score
         overall_sentiment_score = total_sentiment / count if count > 0 else 0
 
         # Determine overall sentiment category
         if overall_sentiment_score > 0.05:
-            overall_sentiment = "Positive"
+            overall_sentiment = "Positive 😀"
         elif overall_sentiment_score < -0.05:
-            overall_sentiment = "Negative"
+            overall_sentiment = "Negative 😠"
         else:
-            overall_sentiment = "Neutral"
+            overall_sentiment = "Neutral 😐"
 
-        print("\nOverall Webpage Sentiment Analysis:")
-        print(f"Average Sentiment Score: {overall_sentiment_score:.2f}")
-        print(f"Overall Sentiment: {overall_sentiment}")
-
-    else:
-        print("No captions found.")
+        print("\n🔹 Overall Webpage Sentiment Analysis:")
+        print(f"📊 Average Sentiment Score: {overall_sentiment_score:.2f}")
+        print(f"🌍 Overall Sentiment: {overall_sentiment}")
 
 except requests.exceptions.RequestException as e:
-    print("Error fetching the webpage:", e)
+    print("❌ Error fetching the webpage:", e)
